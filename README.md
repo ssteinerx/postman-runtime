@@ -111,9 +111,14 @@ runner.run(collection, { /* options */ }, function(err, run) {
     run.start({
         // Called any time we see a new assertion in the test scripts
         // *note* Not used yet.
-        assertion: function (name, result) {
-            // name: string
-            // result: Boolean
+        assertion: function (cursor, result) {
+            /* cursor same as for "start" */ 
+            // result: {
+            //     name: String,
+            //     passed: Boolean,
+            //     error: null or Error,
+            //     index: Number
+            // }
         },
         
         // Called when the run begins
