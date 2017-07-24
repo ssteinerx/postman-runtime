@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>runner/extensions/request.command.js - Postman Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home 6.2.6-beta.1</a></h2><h3>Tutorials</h3><ul><li><a href="tutorial-architecture.html">Architecture</a></li><li><a href="tutorial-components.html">Postman Runtime Components</a></li><li><a href="tutorial-new-auth-mechanisms.html">New Authentication Mechanisms</a></li><li><a href="tutorial-request-send-flow.html">Request Send Flow</a></li></ul><h3>Classes</h3><ul><li><a href="Authorizer.html">Authorizer</a><ul class='methods'><li data-type='method'><a href="Authorizer.html#.addHandler">addHandler</a></li><li data-type='method'><a href="Authorizer.html#.removeHandler">removeHandler</a></li><li data-type='method'><a href="Authorizer.html#init">init</a></li><li data-type='method'><a href="Authorizer.html#isInteractive">isInteractive</a></li><li data-type='method'><a href="Authorizer.html#postVerify">postVerify</a></li><li data-type='method'><a href="Authorizer.html#preVerify">preVerify</a></li><li data-type='method'><a href="Authorizer.html#sign">sign</a></li></ul></li><li><a href="Cursor.html">Cursor</a></li><li><a href="global.html#Run">Run</a><ul class='methods'><li data-type='method'><a href="global.html#Run#abort">abort</a></li><li data-type='method'><a href="global.html#Run#pause">pause</a></li><li data-type='method'><a href="global.html#Run#resume">resume</a></li></ul></li><li><a href="Runner.html">Runner</a></li><li><a href="Run-module_Instructions-pool-Instruction.html">Instruction</a><ul class='methods'><li data-type='method'><a href="Run-module_Instructions-pool-Instruction.html#.create">create</a></li><li data-type='method'><a href="Run-module_Instructions-pool-Instruction.html#execute">execute</a></li></ul></li><li><a href="Run-module_Timer-Timings.html">Timings</a><ul class='methods'><li data-type='method'><a href="Run-module_Timer-Timings.html#.create">create</a></li><li data-type='method'><a href="Run-module_Timer-Timings.html#record">record</a></li><li data-type='method'><a href="Run-module_Timer-Timings.html#toObject">toObject</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="Run-module_Instructions.html">Instructions</a><ul class='methods'><li data-type='method'><a href="Run-module_Instructions.html#~pool">pool</a></li></ul></li><li><a href="Run-module_Timer.html">Timer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bof">bof</a></li><li><a href="global.html#bounds">bounds</a></li><li><a href="global.html#box">box</a></li><li><a href="global.html#clear">clear</a></li><li><a href="global.html#commands">commands</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#cr">cr</a></li><li><a href="global.html#create">create</a></li><li><a href="global.html#createContext">createContext</a></li><li><a href="global.html#current">current</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#eof">eof</a></li><li><a href="global.html#FUNCTION">FUNCTION</a></li><li><a href="global.html#hasChanged">hasChanged</a></li><li><a href="global.html#initialisers">initialisers</a></li><li><a href="global.html#interrupt">interrupt</a></li><li><a href="global.html#load">load</a></li><li><a href="global.html#lookup">lookup</a></li><li><a href="global.html#meetExpectations">meetExpectations</a></li><li><a href="global.html#next">next</a></li><li><a href="global.html#prepareLookupHash">prepareLookupHash</a></li><li><a href="global.html#queue">queue</a></li><li><a href="global.html#REQUEST_MODES">REQUEST_MODES</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#run">run</a></li><li><a href="global.html#seek">seek</a></li><li><a href="global.html#setCertificate">setCertificate</a></li><li><a href="global.html#setProxy">setProxy</a></li><li><a href="global.html#start">start</a></li><li><a href="global.html#toChromeCookie">toChromeCookie</a></li><li><a href="global.html#transformMultiValueHeaders">transformMultiValueHeaders</a></li><li><a href="global.html#triggers">triggers</a></li><li><a href="global.html#valueOf">valueOf</a></li><li><a href="global.html#whatnext">whatnext</a></li><li><a href="global.html#zero">zero</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">runner/extensions/request.command.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>var _ = require('lodash'),
+    async = require('async'),
+    uuid = require('uuid'),
+    sdk = require('postman-collection'),
+
+    // These are functions which a request passes through _before_ being sent. They take care of stuff such as
+    // variable resolution, loading of files, etc.
+    prehelpers = require('../request-helpers-presend'),
+
+    // Similarly, these run after the request, and have the power to dictate whether a request should be re-queued
+    posthelpers = require('../request-helpers-postsend'),
+
+    Authorizer = require('../../authorizer').Authorizer,
+    RequesterPool = require('../../requester').RequesterPool,
+
+    RESPONSE_DOT = 'response.',
+
+    CONTEXT_PROPERTIES = [
+        'data',
+        'environment',
+        'globals',
+        'coords'
+    ],
+
+    /**
+     * Creates a request execution context from a given payload.
+     *
+     * @param payload
+     * @returns {Object}
+     */
+    createContext = function (payload) {
+        var context = payload.context ? payload.context : _.pick(payload, CONTEXT_PROPERTIES),
+            parent;
+
+        // get a reference to the Auth instance from the original item, so any changes don't have to be synced back
+        context.auth = payload.item.getAuth();
+
+        // if an item is not provided in the context, clone the one from the payload,
+        // so that we can make any changes we need there, without mutating the collection.
+        context.item = context.item || new sdk.Item(payload.item.toJSON());
+
+        // in order to ensure that variable resolution works correctly, we set the __parent property,
+        // so that the SDK can locate the VariableList in the collection.
+        parent = payload.item.parent();
+        parent &amp;&amp; (context.item.setParent(parent));
+
+        return context;
+    };
+
+module.exports = {
+    init: function (done) {
+        // Request timeouts are applied by the requester, so add them to requester options (if any).
+        var self = this;
+
+        // create a requester pool
+        self.requester = new RequesterPool(self.options);
+
+        // Create an authorizer
+        Authorizer.create(self.options.authorizer || {}, function (err, authorizer) {
+            if (err) { return done(err); }
+            self.authorizer = authorizer;
+            done();
+        });
+    },
+
+    // the http trigger is actually directly triggered by the requester
+    // todo - figure out whether we should trigger it from here rather than the requester.
+    triggers: ['beforeRequest', 'request', 'io'],
+
+    process: {
+        /**
+         * @param {Object} payload
+         * @param {Item} payload.item
+         * @param {Object} payload.data
+         * @param {Object} payload.context
+         * @param {VariableScope} payload.globals
+         * @param {VariableScope} payload.environment
+         * @param {Cursor} payload.coords
+         * @param {Function} next
+         *
+         * @todo  validate payload
+         */
+        request: function (payload, next) {
+            var abortOnError = _.has(payload, 'abortOnError') ? payload.abortOnError : this.options.abortOnError,
+                self = this,
+                replayed,
+                context;
+
+            /**
+             * @type {Object}
+             * @property {Item} item -  Holds a copy of the item given in the payload, so that it can be manipulated
+             * as necessary
+             * @property {RequestAuthBase|undefined} auth - If present, is the instance of Auth in the collection, which
+             * is changed as necessary using intermediate requests, etc.
+             * @property {VariableScope} environment
+             * @property {VariableScope} globals
+             * @property {Object} data
+             * @property {Boolean} replay - Indicates whether this request a replayed request
+             */
+            context = createContext(payload);
+            replayed = context.replay;
+
+            // Run the helper functions
+            async.applyEachSeries(prehelpers, context, self, function (err) {
+                var xhr,
+                    aborted,
+                    item = context.item,
+                    beforeRequest,
+                    afterRequest;
+
+                // Helper function which calls the beforeRequest trigger ()
+                beforeRequest = function (err) {
+                    !replayed &amp;&amp; self.triggers.beforeRequest(err, payload.coords, item.request, payload.item, {
+                        abort: function () {
+                            !aborted &amp;&amp; xhr &amp;&amp; xhr.abort();
+                            aborted = true;
+                        }
+                    });
+                };
+
+                // Helper function to call the afterRequest trigger.
+                afterRequest = function (err, response, request, cookies) {
+                    self.triggers.request(err, payload.coords, response, request, payload.item, cookies);
+                };
+
+                // Ensure that this is called.
+                beforeRequest(null);
+
+                if (err) {
+                    // Since we encountered an error before even attempting to send the request, we bubble it up
+                    // here.
+                    afterRequest(err, undefined, item.request);
+                    return next((err &amp;&amp; abortOnError) ? err : null, {
+                        request: item.request
+                    }, err);
+                }
+
+                if (aborted) { return next(new Error('runtime: request aborted')); }
+
+                self.requester.create(context.trace || {
+                    type: 'http',
+                    source: 'collection',
+                    cursor: context.coords
+                }, function (err, requester) {
+                    if (err) { return next(err); } // this should never happen
+
+                    var sendId = RESPONSE_DOT + uuid();
+
+                    requester.on(sendId, self.triggers.io.bind(self.triggers));
+
+                    xhr = requester.request(sendId, item.request, function (err, res, req, cookies) {
+                        err = err || null;
+
+                        var nextPayload = {
+                                response: res,
+                                request: req,
+                                cookies: cookies
+                            },
+
+                            // called when we want to complete this request.
+                            complete = function () {
+                                // trigger the request event.
+                                // @note -  we give the _original_ item in this trigger, so someone can do reference
+                                //          checking. Not sure if we should do that or not, but that's how it is.
+                                //          Don't break it.
+                                afterRequest(err, res, req, cookies);
+
+                                // Dispose off the requester, we don't need it anymore.
+                                requester.dispose();
+
+                                // the error is passed twice to allow control between aborting the error vs just
+                                // bubbling it up
+                                return next((err &amp;&amp; abortOnError) ? err : null, nextPayload, err);
+                            };
+
+                        if (err) {
+                            return complete(); // complete handles the error, it's not a callback.
+                        }
+
+                        // we could have also added the response to the set of responses in the cloned item,
+                        // but then, we would have to iterate over all of them, which seems unnecessary
+                        context.response = res;
+
+                        // run the post request helpers, which need to use the response, assigned above
+                        async.applyEachSeries(posthelpers, context, self, function (err) {
+                            var pload;
+
+                            if (context.replay) {
+                                pload = _.clone(payload);
+                                pload.context = context;
+                                // queue the request again
+                                self.interrupt('request', pload);
+                                return next((err &amp;&amp; abortOnError) ? err : null, nextPayload, err);
+                            }
+
+                            complete();
+                        });
+                    });
+                });
+            });
+        }
+    }
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated at Mon Jul 24 2017 12:14:31 GMT+0000 (UTC)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
